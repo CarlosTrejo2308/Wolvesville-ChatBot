@@ -24,7 +24,7 @@ Games have two phases:
 
 Dark Souls is a clan in Wolvesville, the main language of the clan is Spanish. The clan has a lot of history and currently it's very active doing clan quests each week.
 
-The known previous admins of the clan are: Ana, Carlos Lunes, Markel and finally Zettate. The original owner is unknown, but each admin served for a period of time who then passed the clan to the next admin.
+The known previous admins of the clan are: Ana, Carlos, Lunes, Markel and finally Zettate. The original owner is unknown, but each admin served for a period of time who then passed the clan to the next admin.
 
 Currently, the clan is part of a community called Demons
 
