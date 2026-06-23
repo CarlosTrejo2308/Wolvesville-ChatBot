@@ -1,3 +1,4 @@
+import logging
 import requests
 from config import CLAN_ID, WOLVESVILLE_TOKEN, API_BASE
 
@@ -28,7 +29,7 @@ def send_clan_message(text):
     url = f"{API_BASE}/clans/{CLAN_ID}/chat"
     response = requests.post(url, headers=HEADERS, json={"message": text})
     response.raise_for_status()
-    print(f"[SENT] {text}")
+    logging.info(f"[SENT] {text}")
 
 def message_date(msg):
     """Return the timestamp string for a chat message."""
@@ -37,6 +38,13 @@ def message_date(msg):
 def message_text(msg):
     """Return the text of a chat message."""
     return msg.get("msg", "")
+
+def strip_wolfie_mention(text):
+    """Remove the leading @wolfie mention from a message."""
+    stripped = text.lstrip()
+    if stripped.lower().startswith("@wolfie"):
+        stripped = stripped[len("@wolfie"):].lstrip()
+    return stripped
 
 def message_username(msg, player_map=None):
     """Return the sender username for a chat message.
