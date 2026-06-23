@@ -5,8 +5,11 @@ from config import STATE_FILE
 # Used to initialize state.json
 DEFAULT_STATE = {
     "last_message_timestamp": None,
-    "player_memory": {}
+    "player_memory": {},
+    "player_cache": {},
 }
+
+MAX_FACTS_PER_PLAYER = 10
 
 # Loads the state.json. If it doesnt exist, then it return default state
 def load_state():
@@ -34,11 +37,11 @@ def save_state(state):
         json.dump(state, f, indent=2)
 
 def update_player_memory(state, player, fact):
-    """Add a fact about a player to memory."""
-    if player not in state["player_memory"]:
-        state["player_memory"][player] = []
-    if fact not in state["player_memory"][player]:
-        state["player_memory"][player].append(fact)
+    """Add a fact about a player to memory, capped at MAX_FACTS_PER_PLAYER."""
+    facts = state["player_memory"].setdefault(player, [])
+    if fact not in facts:
+        facts.append(fact)
+        state["player_memory"][player] = facts[-MAX_FACTS_PER_PLAYER:]
 
 def format_memory_for_prompt(player_memory):
     """Format stored player memory into a string for the LLM prompt."""

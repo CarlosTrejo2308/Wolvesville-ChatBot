@@ -1,7 +1,9 @@
+import logging
 import anthropic
 from config import ANTHROPIC_API_KEY, SYSTEM_PROMPT_FILE
 from storage import format_memory_for_prompt
-from api import message_username, message_text
+from api import message_username, message_text, strip_wolfie_mention
+from safety import is_safe_output
 client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 def load_system_prompt():
@@ -12,9 +14,9 @@ def load_system_prompt():
 def build_messages(new_messages, player_memory, player_map=None):
     """Build the messages array for the API call."""
 
-    # Format chat as a readable block
+    # Format chat as a readable block (strip @wolfie prefix so the LLM sees clean text)
     chat_block = "\n".join([
-        f"{message_username(msg, player_map)}: {message_text(msg)}"
+        f"{message_username(msg, player_map)}: {strip_wolfie_mention(message_text(msg))}"
         for msg in new_messages
     ])
     active_players = {message_username(msg, player_map) for msg in new_messages}
@@ -51,6 +53,10 @@ def get_reply_and_extract_memory(new_messages, player_memory, player_map=None):
     )
 
     raw = response.content[0].text.strip()
+
+    if not is_safe_output(raw):
+        logging.warning("[SAFETY] LLM response flagged as potentially compromised — suppressed.")
+        return None, []
 
     # Split reply from memory lines
     reply_lines = []
