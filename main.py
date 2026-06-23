@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from api import (
     get_clan_chat,
+    get_player_username,
     send_clan_message,
     message_date,
     message_text,
@@ -59,26 +60,31 @@ def main():
             save_state(state)
         return
 
+    # 3. Resolve player IDs to usernames
+    unique_ids = {msg.get("playerId") for msg in new_messages if msg.get("playerId")}
+    player_map = {pid: get_player_username(pid) for pid in unique_ids}
+
     print(f"[FOUND] {len(new_messages)} new message(s)")
     for m in new_messages:
-        print(f"  {message_username(m)}: {message_text(m)}")
+        print(f"  {message_username(m, player_map)}: {message_text(m)}")
 
-    # 3. Ask LLM for reply
+    # 4. Ask LLM for reply
     reply, memory_updates = get_reply_and_extract_memory(
         new_messages,
-        state["player_memory"]
+        state["player_memory"],
+        player_map
     )
 
-    # 4. Update player memory
+    # 5. Update player memory
     for username, fact in memory_updates:
         update_player_memory(state, username, fact)
         print(f"[MEMORY] {username}: {fact}")
 
-    # 5. Send reply
+    # 6. Send reply
     if reply:
         send_clan_message(reply)
 
-    # 6. Save new timestamp (latest message seen)
+    # 7. Save new timestamp (latest message seen)
     latest_ts = max(message_date(msg) for msg in new_messages)
     state["last_message_timestamp"] = latest_ts
     save_state(state)

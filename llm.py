@@ -9,15 +9,17 @@ def load_system_prompt():
     with open(SYSTEM_PROMPT_FILE, "r") as f:
         return f.read()
 
-def build_messages(new_messages, player_memory):
+def build_messages(new_messages, player_memory, player_map=None):
     """Build the messages array for the API call."""
 
     # Format chat as a readable block
     chat_block = "\n".join([
-        f"{message_username(msg)}: {message_text(msg)}"
+        f"{message_username(msg, player_map)}: {message_text(msg)}"
         for msg in new_messages
     ])
-    memory_block = format_memory_for_prompt(player_memory)
+    active_players = {message_username(msg, player_map) for msg in new_messages}
+    filtered_memory = {k: v for k, v in player_memory.items() if k in active_players}
+    memory_block = format_memory_for_prompt(filtered_memory)
 
     user_content = f"""
 ## Current player notes (what you remember about clan members)
@@ -35,11 +37,11 @@ You can include multiple MEMORY lines if needed.
     return [{"role": "user", "content": user_content}]
 
 
-def get_reply_and_extract_memory(new_messages, player_memory):
+def get_reply_and_extract_memory(new_messages, player_memory, player_map=None):
     """Call LLM, parse reply and any new memory facts."""
 
     system_prompt = load_system_prompt()
-    messages = build_messages(new_messages, player_memory)
+    messages = build_messages(new_messages, player_memory, player_map)
 
     response = client.messages.create(
         model="claude-haiku-4-5",

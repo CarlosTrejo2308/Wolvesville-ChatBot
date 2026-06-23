@@ -6,6 +6,16 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+def get_player_username(player_id):
+    """Fetch a player's username from their ID. Falls back to the ID on error."""
+    url = f"{API_BASE}/players/{player_id}"
+    try:
+        response = requests.get(url, headers=HEADERS)
+        response.raise_for_status()
+        return response.json().get("username", player_id)
+    except Exception:
+        return player_id
+
 def get_clan_chat():
     """Fetch recent clan chat messages."""
     url = f"{API_BASE}/clans/{CLAN_ID}/chat"
@@ -28,14 +38,17 @@ def message_text(msg):
     """Return the text of a chat message."""
     return msg.get("msg", "")
 
-def message_username(msg):
+def message_username(msg, player_map=None):
     """Return the sender username for a chat message.
 
-    The function checks bot owner metadata first, then player username,
-    and falls back to the player ID if needed.
+    Checks bot owner metadata first, then the resolved player_map,
+    then falls back to inline playerUsername or the raw playerId.
     """
     if username := msg.get("playerBotOwnerUsername"):
         return username
+    if player_map and (player_id := msg.get("playerId")):
+        if resolved := player_map.get(player_id):
+            return resolved
     if username := msg.get("playerUsername"):
         return username
     return msg.get("playerId", "unknown")
@@ -45,6 +58,8 @@ def is_skippable_message(msg, bot_owner_username=None):
     if msg.get("isSystem"):
         return True
     if not msg.get("msg"):
+        return True
+    if not msg.get("msg", "").lower().startswith("@wolfie"):
         return True
     if not msg.get("date"):
         return True

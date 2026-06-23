@@ -9,10 +9,11 @@ Designed to run on a schedule (for example, every few minutes via cron or Task S
 Each run:
 
 1. Fetches recent messages from the Wolvesville clan chat API
-2. Filters to new text messages since the last run
-3. Sends the conversation plus stored player notes to Claude
-4. Posts a reply to clan chat
-5. Saves the latest timestamp and any new player memories to disk
+2. Filters to new text messages that start with `@wolfie` since the last run
+3. Resolves player IDs to usernames via the Wolvesville player API
+4. Sends the conversation plus stored notes for those players to Claude
+5. Posts a reply to clan chat
+6. Saves the latest timestamp and any new player memories to disk
 
 ```text
 main.py          Entry point — orchestrates the poll/reply loop
@@ -43,7 +44,7 @@ data/
 2. Install dependencies:
 
    ```bash
-   pip install anthropic requests
+   pip install -r requirements.txt
    ```
 
 3. Create `config.py` in the project root (this file is gitignored):
@@ -89,10 +90,10 @@ Schedule it to run periodically. Example cron entry (every 2 minutes):
 ### Example output
 
 ```text
-[FOUND] 3 new message(s)
-  6f4a5326-8c8f-4d19-85ef-d20067086965: Hola clan
-  8f16b52a-90dc-4b8d-8d0a-fa5f3a807db0: Quién juega hoy?
-[MEMORY] 8f16b52a-90dc-4b8d-8d0a-fa5f3a807db0: Le gusta jugar por la noche
+[FOUND] 2 new message(s)
+  Maddoc: @wolfie Hola clan
+  CarlosTrejo2308: @wolfie Quién juega hoy?
+[MEMORY] CarlosTrejo2308: Le gusta jugar por la noche
 [SENT] ¡Yo me apunto! 🐺
 ```
 
@@ -106,6 +107,7 @@ No new messages since last run.
 
 The bot intentionally skips:
 
+- Messages that do not start with `@wolfie` (case-insensitive)
 - Its own messages (`BOT_OWNER_USERNAME`)
 - System messages (`isSystem: true`)
 - Non-text entries (messages without a `msg` field, e.g. some special chat events)
@@ -120,9 +122,9 @@ Claude can append facts about players using lines like:
 MEMORY: CarlosTrejo2308 | Trabaja en oficina entre semana
 ```
 
-These are parsed from the model response and stored in `data/state.json` under `player_memory`, then included in future prompts.
+These are parsed from the model response and stored in `data/state.json` under `player_memory`, then included in future prompts for those same players.
 
-**Note:** The Wolvesville chat API often returns `playerId` instead of a display name for regular players. Memory keys may use IDs unless the API provides a username.
+Player IDs from the chat API are resolved to display names via `GET /players/{playerId}` before being stored, so memory keys are always usernames.
 
 ## Customization
 
